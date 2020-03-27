@@ -1,7 +1,7 @@
 #### The code and data in this repository is aimed at providing users with an opportunity to practice basic coding techniques in various languages to solve problems. It is best suited for an individual who is just beginning their journey in data science/programming, but can be a good refresher for more advanced users.
 
 #### We are using the data `/data/tables.xlsx` to answer the following questions:
-1. Write code to provide a list of clients that purchased the brand 'gap' and have an email address
+1. Write code to provide a list of clients that purchased the brand 'king' and have an email address
 2. Write code to provide three lists:
     - One list of distinct clients that purchased from only the online channel and not the store channel
     - One list of distinct clients that purchase from only the store channel and not online
