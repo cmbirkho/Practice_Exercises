@@ -29,14 +29,14 @@ product_table <- read_excel('./data/tables.xlsx',
                             sheet = 'product_table')
 
 ```
-#### 1. Write code to provide a list of clients that purchased the brand 'gap' and have an email address
+#### 1. Write code to provide a list of clients that purchased the brand 'king' and have an email address
 ```{r}
 
 newTable <- left_join(line_sales, product_table, by = 'product_key')
 newTable <- left_join(newTable, d_customer, by = 'customer_id')
 
 newTable <- newTable %>% 
-  filter(brand == 'gap' & !is.na(email_address)) %>% 
+  filter(brand == 'king' & !is.na(email_address)) %>% 
   select(customer_id, email_address)
 
 print(newTable)

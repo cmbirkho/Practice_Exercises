@@ -33,7 +33,7 @@ product_table <- read_excel('./data/tables.xlsx',
 
 ```
 
-#### 1. Write code to provide a list of clients that purchased the brand 'gap' and have an email address
+#### 1. Write code to provide a list of clients that purchased the brand 'king' and have an email address
 ```{r}
 sqldf("select 
             ls.customer_id, 
@@ -43,7 +43,7 @@ sqldf("select
           on pt.product_key = ls.product_key
         join d_customer c 
           on ls.customer_id = c.customer_id
-        where pt.brand = 'gap'
+        where pt.brand = 'king'
         and c.email_address is not null")
 
 
