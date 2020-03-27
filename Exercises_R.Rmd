@@ -1,0 +1,150 @@
+---
+title: "Practice Exercises in R"
+author: "Connor Birkhold"
+date: "May 23, 2019"
+output: html_document
+---
+
+```{r include=FALSE}
+setwd("C:/Users/Cbirkho/Documents/Practice_Exercises")
+```
+
+
+#### Load Packages
+```{r warning=FALSE,message=FALSE}
+library(tidyverse)
+library(readxl)
+```
+#### Load in the data
+```{r warning=FALSE}
+d_customer <- read_excel('./data/tables.xlsx',
+                         sheet = 'd_customer') %>% 
+  mutate(signup_date = as.Date(as.numeric(signup_date), origin = '1899-12-30'))
+
+line_sales <- read_excel('./data/tables.xlsx',
+                         sheet = 'line_sales') %>% 
+  rename(purchase_channel = `purchase channel`)
+
+product_table <- read_excel('./data/tables.xlsx',
+                            sheet = 'product_table')
+
+```
+#### 1. Write code to provide a list of clients that purchased the brand 'gap' and have an email address
+```{r}
+
+newTable <- left_join(line_sales, product_table, by = 'product_key')
+newTable <- left_join(newTable, d_customer, by = 'customer_id')
+
+newTable <- newTable %>% 
+  filter(brand == 'gap' & !is.na(email_address)) %>% 
+  select(customer_id, email_address)
+
+print(newTable)
+
+```
+#### 2. Write code to provide three lists.  
+
+* a.One list of distinct clients that purchased from only the online channel and not the store channel.
+```{r}
+
+filterTable <- line_sales %>% 
+  filter(purchase_channel == 'online') %>% 
+  select(customer_id)
+
+newTable <- line_sales %>% 
+  filter(customer_id %in% filterTable$customer_id) %>% 
+  group_by(customer_id) %>% 
+  summarise(cnt_purchase_channel = length(purchase_channel)) %>% 
+  filter(cnt_purchase_channel == 1) %>% 
+  select(customer_id)
+
+print(newTable)
+
+```
+* b.One list of distinct clients that purchase from only the store channel and not online
+```{r}
+filterTable <- line_sales %>% 
+  filter(purchase_channel == 'store') %>% 
+  select(customer_id)
+
+newTable <- line_sales %>% 
+  filter(customer_id %in% filterTable$customer_id) %>% 
+  group_by(customer_id) %>% 
+  summarise(cnt_purchase_channel = length(purchase_channel)) %>% 
+  filter(cnt_purchase_channel == 1) %>% 
+  select(customer_id)
+
+print(newTable)
+
+```
+* c.One list of distinct clients that purchased from both the online and store channel.
+```{r}
+onlineTable <- line_sales %>% 
+  filter(purchase_channel == 'online') %>% 
+  select(customer_id)
+
+storeTable <- line_sales %>% 
+  filter(purchase_channel == 'store') %>% 
+  select(customer_id)
+
+newTable <- onlineTable %>% 
+  filter(customer_id %in% storeTable$customer_id)
+  
+
+print(newTable)
+
+```
+
+#### 3. Write code to provide the count of distinct clients, total orders, total sales, and average purchase by purchase channel
+```{r warning=FALSE, message=FALSE}
+library(data.table) # going to use data.table package here
+```
+
+```{r}
+
+
+setDT(line_sales) # converting line_sales to data.table structure
+
+newTable <- line_sales[,
+                       .(distinct_clients = uniqueN(customer_id),
+                         total_orders = uniqueN(order_number),
+                         total_sales = sum(total_amt),
+                         avg_purchase = mean(total_amt)),
+                       by = purchase_channel]
+
+
+print(newTable)
+```
+
+#### 4.Write code to provide a list of distinct clients that have an email address, signed up for email after 01/01/2010, and purchased tops after 3/10/2010
+```{r}
+newTable <- left_join(d_customer, line_sales, by = 'customer_id')
+
+newTable <- left_join(newTable, product_table, by = 'product_key')
+
+newTable <- newTable %>% 
+  filter(!is.na(email_address)
+         & class == 'tops'
+         & signup_date > '2010-01-01'
+         & order_date > '2010-03-10') %>% 
+  select(customer_id)
+
+print(newTable) # no customer_id meet these conditions
+
+
+```
+
+#### 5.Write code to provide a list of each email address and each email addresses total sales.
+```{r}
+newTable <- left_join(d_customer, line_sales, by = 'customer_id')
+
+newTable <- newTable %>% 
+  filter(!is.na(email_address)) %>% 
+  group_by(email_address) %>% 
+  summarise(total_sales = sum(total_amt)) %>% 
+  filter(!is.na(total_sales))
+
+print(newTable)
+
+```
+

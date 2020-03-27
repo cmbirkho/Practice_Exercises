@@ -1,0 +1,185 @@
+---
+title: "Practice Exercises SQL"
+author: "Connor Birkhold"
+date: "May 25, 2019"
+output: html_document
+---
+
+```{r include=FALSE}
+setwd("C:/Users/Cbirkho/Documents/Practice_Exercises")
+```
+
+
+#### Load Packages
+```{r warning = FALSE, message = FALSE}
+library(sqldf) # package used to write SQL in R
+library(tidyverse)
+library(readxl)
+
+```
+
+#### Load the data
+```{r warning=FALSE}
+d_customer <- read_excel('./data/tables.xlsx',
+                         sheet = 'd_customer') %>% 
+  mutate(signup_date = as.Date(as.numeric(signup_date), origin = '1899-12-30'))
+
+line_sales <- read_excel('./data/tables.xlsx',
+                         sheet = 'line_sales') %>% 
+  rename(purchase_channel = `purchase channel`)
+
+product_table <- read_excel('./data/tables.xlsx',
+                            sheet = 'product_table')
+
+```
+
+#### 1. Write code to provide a list of clients that purchased the brand 'gap' and have an email address
+```{r}
+sqldf("select 
+            ls.customer_id, 
+            c.email_address
+        from product_table pt 
+        join line_sales ls 
+          on pt.product_key = ls.product_key
+        join d_customer c 
+          on ls.customer_id = c.customer_id
+        where pt.brand = 'gap'
+        and c.email_address is not null")
+
+
+```
+
+#### 2. Write code to provide three lists.  
+
+* A.One list of distinct clients that purchased from only the online channel and not the store channel.
+```{r}
+sqldf("select 
+        ls1.customer_id 
+      from line_sales ls1 
+      join (select ls2.customer_id 
+            from line_sales ls2 
+            where purchase_channel = 'online') op 
+        on ls1.customer_id = op.customer_id
+      group by ls1.customer_id
+      having count(ls1.purchase_channel) = 1")
+
+# Solve 2A using CTE
+sqldf("with
+      online_sale as (select customer_id
+                      from line_sales
+                      where purchase_channel = 'online'),
+      store_sale as (select customer_id
+                     from line_sales
+                     where purchase_channel = 'store')
+      select os.customer_id
+      from online_sale os
+      left join store_sale ss 
+      on os.customer_id = ss.customer_id
+      where ss.customer_id is null")
+
+```
+
+* B.One list of distinct clients that purchase from only the store channel and not online
+```{r}
+sqldf("select 
+        ls1.customer_id 
+      from line_sales ls1 
+      join (select ls2.customer_id 
+            from line_sales ls2 
+            where purchase_channel = 'store') op 
+        on ls1.customer_id = op.customer_id
+      group by ls1.customer_id 
+      having count(ls1.purchase_channel) = 1") 
+
+# Solve 2B using CTE
+sqldf("with
+      online_sale as (select customer_id
+                      from line_sales
+                      where purchase_channel = 'online'),
+      store_sale as (select customer_id
+                     from line_sales
+                     where purchase_channel = 'store')
+      select ss.customer_id
+      from store_sale ss
+      left join online_sale os 
+      on ss.customer_id = os.customer_id
+      where os.customer_id is null")
+
+```
+
+* C.One list of distinct clients that purchased from both the online and store channel.
+```{r}
+sqldf("select 
+        ls1.customer_id 
+      from line_sales ls1
+      join (select distinct customer_id 
+            from line_sales 
+            where purchase_channel <> 'online') v0 
+        on ls1.customer_id = v0.customer_id
+      where ls1.purchase_channel = 'online' ")
+
+# Solve 2C using CTE
+sqldf("with
+      online_sale as (select customer_id
+                      from line_sales
+                      where purchase_channel = 'online'),
+      store_sale as (select customer_id
+                     from line_sales
+                     where purchase_channel = 'store')
+      select ss.customer_id
+      from store_sale ss
+      join online_sale os 
+      on ss.customer_id = os.customer_id
+      where os.customer_id is not null
+      and ss.customer_id is not null
+      group by ss.customer_id")
+
+```
+
+#### 3. Write code to provide the count of distinct clients, total orders, total sales, and average purchase by purchase channel
+```{r}
+
+sqldf("select 
+          purchase_channel
+          ,count(distinct customer_id) as distinct_clients
+          ,count(distinct order_number) as total_orders
+          ,sum(total_amt) as total_sales
+          ,avg(total_amt) as avg_purchase
+      from line_sales 
+      group by purchase_channel")
+
+
+
+```
+
+#### 4.Write code to provide a list of distinct clients that have an email address, signed up for email after 01/01/2010, and purchased tops after 3/10/2010
+**Note: sqldf package in R does not like the date filters. This will run in a SQL editor**
+```{r error=TRUE, eval=FALSE}
+
+
+sqldf("select 
+        c.customer_id
+      from d_customer c
+      join line_sales ls 
+        on c.customer_id = ls.customer_id
+      join product_table pt
+        on ls.product_key on pt.product_key
+      where c.email_address is not null 
+      and c.signup_date > '2010-01-01'
+      and ls.order_date > '2010-03-10'
+      and pt.class = 'tops' ")
+
+```
+#### 5.Write code to provide a list of each email address and each email addresses total sales.
+```{r}
+
+
+sqldf("select 
+        c.email_address, 
+        sum(ls.total_amt) as total_sales
+      from d_customer c 
+      join line_sales ls
+        on c.customer_id = ls.customer_id
+      where c.email_address is not null
+      group by c.email_address")
+```
