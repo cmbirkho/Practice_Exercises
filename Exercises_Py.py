@@ -20,6 +20,7 @@ product_table.head()
 
 #==============================================================================================================================================================
 # 1. Write code to provide a list of clients that purchased the brand 'king' and have an email address
+
 prod_info = pd.merge(line_sales, product_table, how='left', left_on='product_key', right_on='product_key')
 total_tab = pd.merge(prod_info, d_customer, how='left', left_on='customer_id', right_on='customer_id')
 
@@ -30,38 +31,35 @@ print(total_tab[['customer_id', 'email_address']])
 
 #==============================================================================================================================================================
 # 2. Write code to provide three lists
+
+# All three of these questions (A, B, C) are similar. Let's define a function to help us answer them
+# so we can avoid re-typing the same code over and over again
+def three_lists(sales_data, channel_list, channel_cnt):
+    """
+    Function that returns a list of customer ids
+    channel_list requires a list object so we raise an error if it is not a list
+    """
+    if isinstance(channel_list, list):
+        channel_data = sales_data.loc[sales_data['purchase_channel'].isin(channel_list), ['customer_id']]
+        l = channel_data.customer_id.tolist()
+        channel_data = sales_data[sales_data['customer_id'].isin(l)]
+        channel_data = channel_data.groupby(['customer_id']).nunique()
+        channel_data = channel_data[channel_data['purchase_channel'] == channel_cnt]
+        cust_id_list = []
+        for cust_id in range(len(channel_data)):
+            cust_id_list.append(channel_data.index[cust_id])
+        return cust_id_list
+    else:
+        raise TypeError("Expected channel_list to be a list")
+
 # A. One list of distinct clients that purchased from only the online channel and not the store channel
-online_only = line_sales.loc[line_sales['purchase_channel'] == 'online', ['customer_id']]
-online_only = online_only.customer_id.tolist()
-
-new_table = line_sales[line_sales['customer_id'].isin(online_only)]
-new_table = new_table.groupby(['customer_id']).nunique()
-new_table = new_table[new_table['purchase_channel'] == 1]
-
-for i in range(len(new_table)): 
-    print("Customer ID: ", new_table.index[i])
+three_lists(line_sales, ['online'], 1)
 
 # B. One list of distinct clients that purchase from only the store channel and not online
-store_only = line_sales.loc[line_sales['purchase_channel'] == 'store', ['customer_id']]
-store_only = store_only.customer_id.tolist()
-
-new_table = line_sales[line_sales['customer_id'].isin(store_only)]
-new_table = new_table.groupby(['customer_id']).nunique()
-new_table = new_table[new_table['purchase_channel'] == 1]
-
-for i in range(len(new_table)): 
-    print("Customer ID: ", new_table.index[i])
+three_lists(line_sales, ['store'], 1)
 
 # C. One list of distinct clients that purchased from both the online and store channel
-store_only = line_sales.loc[line_sales['purchase_channel'] == 'store', ['customer_id']]
-store_only = store_only.customer_id.tolist()
-
-new_table = line_sales[line_sales['customer_id'].isin(store_only)]
-new_table = new_table.groupby(['customer_id']).nunique()
-new_table = new_table[new_table['purchase_channel'] == 2]
-
-for i in range(len(new_table)): 
-    print("Customer ID: ", new_table.index[i])
+three_lists(line_sales, ['store', 'online'], 2)
 
 #==============================================================================================================================================================
 # 3. Write code to provide the count of distinct clients, total orders, total sales, and average purchase by purchase channel

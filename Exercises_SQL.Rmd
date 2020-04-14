@@ -35,16 +35,16 @@ product_table <- read_excel('./data/tables.xlsx',
 
 #### 1. Write code to provide a list of clients that purchased the brand 'king' and have an email address
 ```{r}
-sqldf("select 
+sqldf("SELECT 
             ls.customer_id, 
             c.email_address
-        from product_table pt 
-        join line_sales ls 
-          on pt.product_key = ls.product_key
-        join d_customer c 
-          on ls.customer_id = c.customer_id
-        where pt.brand = 'king'
-        and c.email_address is not null")
+        FROM product_table pt 
+        JOIN line_sales ls 
+          ON pt.product_key = ls.product_key
+        JOIN d_customer c 
+          ON ls.customer_id = c.customer_id
+        WHERE pt.brand = 'king'
+        AND c.email_address IS NOT NULL;")
 
 
 ```
@@ -53,100 +53,113 @@ sqldf("select
 
 * A.One list of distinct clients that purchased from only the online channel and not the store channel.
 ```{r}
-sqldf("select 
+sqldf("SELECT 
         ls1.customer_id 
-      from line_sales ls1 
-      join (select ls2.customer_id 
-            from line_sales ls2 
-            where purchase_channel = 'online') op 
-        on ls1.customer_id = op.customer_id
-      group by ls1.customer_id
-      having count(ls1.purchase_channel) = 1")
+      FROM line_sales ls1 
+      JOIN (SELECT
+              ls2.customer_id 
+            FROM line_sales ls2 
+            WHERE purchase_channel = 'online') op 
+        ON ls1.customer_id = op.customer_id
+      GROUP BY ls1.customer_id
+      HAVING COUNT(ls1.purchase_channel) = 1;")
 
 # Solve 2A using CTE
-sqldf("with
-      online_sale as (select customer_id
-                      from line_sales
-                      where purchase_channel = 'online'),
-      store_sale as (select customer_id
-                     from line_sales
-                     where purchase_channel = 'store')
-      select os.customer_id
-      from online_sale os
-      left join store_sale ss 
-      on os.customer_id = ss.customer_id
-      where ss.customer_id is null")
+sqldf("WITH
+      online_sale AS (SELECT 
+                        customer_id
+                      FROM line_sales
+                      WHERE purchase_channel = 'online'),
+      store_sale AS (SELECT customer_id
+                     FROM line_sales
+                     WHERE purchase_channel = 'store')
+      SELECT 
+        os.customer_id
+      FROM online_sale os
+      LEFT JOIN store_sale ss 
+      ON os.customer_id = ss.customer_id
+      WHERE ss.customer_id IS NULL;")
 
 ```
 
 * B.One list of distinct clients that purchase from only the store channel and not online
 ```{r}
-sqldf("select 
+sqldf("SELECT 
         ls1.customer_id 
-      from line_sales ls1 
-      join (select ls2.customer_id 
-            from line_sales ls2 
-            where purchase_channel = 'store') op 
-        on ls1.customer_id = op.customer_id
-      group by ls1.customer_id 
-      having count(ls1.purchase_channel) = 1") 
+      FROM line_sales ls1 
+      JOIN (SELECT
+              ls2.customer_id 
+            FROM line_sales ls2 
+            WHERE purchase_channel = 'store') op 
+        ON ls1.customer_id = op.customer_id
+      GROUP BY ls1.customer_id 
+      HAVING COUNT(ls1.purchase_channel) = 1;") 
 
 # Solve 2B using CTE
-sqldf("with
-      online_sale as (select customer_id
-                      from line_sales
-                      where purchase_channel = 'online'),
-      store_sale as (select customer_id
-                     from line_sales
-                     where purchase_channel = 'store')
-      select ss.customer_id
-      from store_sale ss
-      left join online_sale os 
-      on ss.customer_id = os.customer_id
-      where os.customer_id is null")
+sqldf("WITH
+      online_sale AS (SELECT 
+                        customer_id
+                      FROM line_sales
+                      WHERE purchase_channel = 'online'),
+      store_sale AS (SELECT 
+                        customer_id
+                     FROM line_sales
+                     WHERE purchase_channel = 'store')
+      SELECT
+        ss.customer_id
+      FROM store_sale ss
+      LEFT JOIN online_sale os 
+      ON ss.customer_id = os.customer_id
+      WHERE os.customer_id IS NULL;")
 
 ```
 
 * C.One list of distinct clients that purchased from both the online and store channel.
 ```{r}
-sqldf("select 
+sqldf("SELECT
         ls1.customer_id 
-      from line_sales ls1
-      join (select distinct customer_id 
-            from line_sales 
-            where purchase_channel <> 'online') v0 
-        on ls1.customer_id = v0.customer_id
-      where ls1.purchase_channel = 'online' ")
+      FROM line_sales ls1
+      JOIN (SELECT 
+              DISTINCT customer_id 
+            FROM line_sales 
+            WHERE purchase_channel <> 'online') v0 
+        ON ls1.customer_id = v0.customer_id
+      WHERE ls1.purchase_channel = 'online'; ")
 
 # Solve 2C using CTE
-sqldf("with
-      online_sale as (select customer_id
-                      from line_sales
-                      where purchase_channel = 'online'),
-      store_sale as (select customer_id
-                     from line_sales
-                     where purchase_channel = 'store')
-      select ss.customer_id
-      from store_sale ss
-      join online_sale os 
-      on ss.customer_id = os.customer_id
-      where os.customer_id is not null
-      and ss.customer_id is not null
-      group by ss.customer_id")
+sqldf("WITH
+      online_sale AS (SELECT
+                        customer_id
+                      FROM line_sales
+                      WHERE purchase_channel = 'online'),
+      store_sale AS (SELECT
+                        customer_id
+                     FROM line_sales
+                     WHERE purchase_channel = 'store')
+      SELECT
+        ss.customer_id
+      FROM store_sale ss
+      JOIN online_sale os 
+      ON ss.customer_id = os.customer_id
+      WHERE os.customer_id IS NOT NULL
+      AND ss.customer_id IS NOT NULL
+      GROUP BY 
+        ss.customer_id;")
 
 ```
 
 #### 3. Write code to provide the count of distinct clients, total orders, total sales, and average purchase by purchase channel
 ```{r}
 
-sqldf("select 
+sqldf("SELECT 
           purchase_channel
-          ,count(distinct customer_id) as distinct_clients
-          ,count(distinct order_number) as total_orders
-          ,sum(total_amt) as total_sales
-          ,avg(total_amt) as avg_purchase
-      from line_sales 
-      group by purchase_channel")
+          ,COUNT(DISTINCT customer_id) AS distinct_clients
+          ,COUNT(DISTINCT order_number) AS total_orders
+          ,SUM(total_amt) AS total_sales
+          ,AVG(total_amt) AS avg_purchase
+      FROM line_sales 
+      GROUP BY
+        purchase_channel;")
 
 
 
@@ -157,29 +170,30 @@ sqldf("select
 ```{r error=TRUE, eval=FALSE}
 
 
-sqldf("select 
+sqldf("SELECT
         c.customer_id
-      from d_customer c
-      join line_sales ls 
-        on c.customer_id = ls.customer_id
-      join product_table pt
-        on ls.product_key on pt.product_key
-      where c.email_address is not null 
-      and c.signup_date > '2010-01-01'
-      and ls.order_date > '2010-03-10'
-      and pt.class = 'tops' ")
+      FROM d_customer c
+      JOIN line_sales ls 
+        ON c.customer_id = ls.customer_id
+      JOIN product_table pt
+        ON ls.product_key = pt.product_key
+      WHERE c.email_address is not null 
+      AND c.signup_date > '2010-01-01'
+      AND ls.order_date > '2010-03-10'
+      AND pt.class = 'tops';")
 
 ```
 #### 5.Write code to provide a list of each email address and each email addresses total sales.
 ```{r}
 
 
-sqldf("select 
+sqldf("SELECT 
         c.email_address, 
-        sum(ls.total_amt) as total_sales
-      from d_customer c 
-      join line_sales ls
-        on c.customer_id = ls.customer_id
-      where c.email_address is not null
-      group by c.email_address")
+        SUM(ls.total_amt) AS total_sales
+      FROM d_customer c 
+      JOIN line_sales ls
+        ON c.customer_id = ls.customer_id
+      WHERE c.email_address IS NOT NULL
+      GROUP BY
+        c.email_address")
 ```
